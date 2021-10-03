@@ -5,6 +5,7 @@ import pytest
 from cookiecutter.exceptions import FailedHookException
 import sh
 import yaml
+from tkinter import *
 from binaryornot.check import is_binary
 
 PATTERN = r"{{(\s?cookiecutter)[.](.*?)}}"
@@ -18,12 +19,34 @@ def context():
         "project_slug": "my_test_project",
         "author_name": "Test Author",
         "email": "test@example.com",
-        "description": "A short description of the project.",
-        "domain_name": "example.com",
         "version": "0.1.0",
         "timezone": "UTC",
     }
-
+ 
+# Create object
+splash_root = Tk()
+  
+# Adjust size
+splash_root.geometry("200x200")
+  
+# Set Label
+splash_label = Label(splash_root, text="Splash Screen", font=18)
+splash_label.pack()
+  
+# main window function
+def main():
+    # Create object
+    root = Tk()
+  
+    # Adjust size
+    root.geometry("400x400")
+  
+  
+# Call main function
+main()
+  
+# Execute tkinter
+mainloop()
 
 SUPPORTED_COMBINATIONS = [
     {"open_source_license": "MIT"},
@@ -85,15 +108,6 @@ SUPPORTED_COMBINATIONS = [
     {"use_celery": "y"},
     {"use_celery": "n"},
     {"use_mailhog": "y"},
-    {"use_mailhog": "n"},
-    {"use_sentry": "y"},
-    {"use_sentry": "n"},
-    {"use_whitenoise": "y"},
-    {"use_whitenoise": "n"},
-    {"use_heroku": "y"},
-    {"use_heroku": "n"},
-    {"ci_tool": "None"},
-    {"ci_tool": "Travis"},
     {"ci_tool": "Gitlab"},
     {"ci_tool": "Github"},
     {"keep_local_envs_in_vcs": "y"},
@@ -181,22 +195,6 @@ def test_black_passes(cookies, context_override):
         ("y", "docker-compose -f local.yml run django pytest"),
     ],
 )
-def test_travis_invokes_pytest(cookies, context, use_docker, expected_test_script):
-    context.update({"ci_tool": "Travis", "use_docker": use_docker})
-    result = cookies.bake(extra_context=context)
-
-    assert result.exit_code == 0
-    assert result.exception is None
-    assert result.project.basename == context["project_slug"]
-    assert result.project.isdir()
-
-    with open(f"{result.project}/.travis.yml", "r") as travis_yml:
-        try:
-            yml = yaml.safe_load(travis_yml)["jobs"]["include"]
-            assert yml[0]["script"] == ["flake8"]
-            assert yml[1]["script"] == [expected_test_script]
-        except yaml.YAMLError as e:
-            pytest.fail(str(e))
 
 
 @pytest.mark.parametrize(
@@ -224,7 +222,23 @@ def test_gitlab_invokes_flake8_and_pytest(
             assert gitlab_config["pytest"]["script"] == [expected_test_script]
         except yaml.YAMLError as e:
             pytest.fail(e)
+            
+def test_travis_invokes_pytest(cookies, context, use_docker, expected_test_script):
+    context.update({"ci_tool": "Travis", "use_docker": use_docker})
+    result = cookies.bake(extra_context=context)
 
+    assert result.exit_code == 0
+    assert result.exception is None
+    assert result.project.basename == context["project_slug"]
+    assert result.project.isdir()
+
+    with open(f"{result.projects}/.travis.yml", "r") as travis_yml:
+        try:
+            yml = yaml.safe_load(travis_yml)["jobs"]["include"]
+            assert yml[0]["script"] == ["flake8"]
+            assert yml[1]["script"] == [expected_test_script]
+        except yaml.YAMLError as e:
+            pytest.fail(str(e))
 
 @pytest.mark.parametrize(
     ["use_docker", "expected_test_script"],
